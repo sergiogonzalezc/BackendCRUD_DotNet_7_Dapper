@@ -38,7 +38,7 @@ Main dependencies:
 
 - [2] Open Windows, type WINDOWS + R key shortcut, and open **Developer Powershell Visual Studio Community Edition 2022** as Administrator, and then execute:
 
-Note: First you must must go to the path where the **.sln** file is, for example: cd "E:\Codelitt\Backend_Net_CRUD_salary\"
+Note: First you must must go to the path where the **.sln** file is, for example: cd "E:\Backend_Net_CRUD_salary\"
 
 **docker image build -t crudchallenge:1.0 -f .\BackendCRUD.Api\Dockerfile .**
 
