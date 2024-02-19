@@ -11,7 +11,7 @@ WORKDIR /src
 COPY ["BackendCRUD.Api/BackendCRUD.Api.csproj", "BackendCRUD.Api/"]
 COPY ["BackendCRUD.Application/BackendCRUD.Application.csproj", "BackendCRUD.Application/"]
 COPY ["BackendCRUD.Common/BackendCRUD.Common.csproj", "BackendCRUD.Common/"]
-COPY ["BackendCRUD.DataAccess/BackendCRUD.DataAccess.csproj", "BackendCRUD.DataAccess/"]
+COPY ["BackendCRUD.Infrasctructure/BackendCRUD.Infrasctructure.csproj", "BackendCRUD.DataAccess/"]
 RUN dotnet restore "BackendCRUD.Api/BackendCRUD.Api.csproj"
 COPY . .
 WORKDIR "/src/BackendCRUD.Api"

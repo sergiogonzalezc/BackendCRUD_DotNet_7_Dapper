@@ -11,6 +11,9 @@ using BackendCRUD.Application.Commands;
 using AutoMapper;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using Azure;
+using FluentValidation;
+using System.ComponentModel.DataAnnotations;
+using BackendCRUD.Application.Handlers;
 
 namespace BackendCRUD.Api.Controllers
 {
@@ -91,7 +94,7 @@ namespace BackendCRUD.Api.Controllers
         [ProducesResponseType(typeof(BackendCRUD.Application.Model.Member), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [AllowAnonymous]
-        public async Task<MemberModel> GetMemberById(int id)
+        public async Task<IResult> GetMemberById(int id)
         {
             string nameMethod = nameof(GetMembers);
             MemberModel finalResult = new MemberModel();
@@ -101,6 +104,13 @@ namespace BackendCRUD.Api.Controllers
                 // Implement a CQRS for query/command responsibility segregation
                 var query = new GetMemberByIdQuerys(id);
                 MemberDTO result = await _mediator.Send(query);
+                var validator = new GetMemberByIdHandlerValidator();
+
+                var resultValidation = validator.Validate(result);
+
+                if (!resultValidation.IsValid)
+                    return Results.ValidationProblem(resultValidation.ToDictionary());
+
                 finalResult.Success = true;
                 finalResult.Data = result;
 

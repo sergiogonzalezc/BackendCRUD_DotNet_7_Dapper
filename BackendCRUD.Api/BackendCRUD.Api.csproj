@@ -19,6 +19,7 @@
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="AutoMapper" Version="13.0.1" />
     <PackageReference Include="Dapper" Version="2.1.28" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.0" />
     <PackageReference Include="MediatR" Version="12.2.0" />
     <PackageReference Include="MediatR.Extensions.Microsoft.DependencyInjection" Version="11.1.0" />    
         <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
@@ -28,7 +29,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\BackendCRUD.Application\BackendCRUD.Application.csproj" />
-    <ProjectReference Include="..\BackendCRUD.DataAccess\BackendCRUD.Infrasctructure.csproj" />
     <ProjectReference Include="..\BackendCRUD.Infrasctructure\BackendCRUD.Infrasctructure.csproj" />
   </ItemGroup>
 
