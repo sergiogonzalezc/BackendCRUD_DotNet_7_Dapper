@@ -16,6 +16,7 @@ using System.Data;
 using Dapper;
 using Microsoft.Data.SqlClient;
 using BackendCRUD.Sql.Queries;
+using Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal;
 
 namespace BackendCRUD.Infraestructure.Repository
 {
@@ -200,13 +201,19 @@ namespace BackendCRUD.Infraestructure.Repository
         /// </summary>
         /// <param name="name"></param>
         /// <returns></returns>
-        public async Task<bool> ExistsMemberById(int Id)
+        public async Task<bool> ExistsMemberById(int id)
         {
-            MemberEF? dataBD = await _dataBaseDBContext.Member.Where(x => x.Id.Equals(Id)).SingleOrDefaultAsync();
-            if (dataBD == null)
-                return false;
-            else
-                return true;
+            //MemberEF? dataBD = await _dataBaseDBContext.Member.Where(x => x.Id.Equals(Id)).SingleOrDefaultAsync();
+
+            //List<MemberDTO> outPutList = new List<MemberDTO>();
+
+            using (IDbConnection connection = new SqlConnection(_cadenaConexion))
+            {
+                connection.Open();
+                var result = await connection.QuerySingleOrDefaultAsync<MemberDTO>(MemberQueries.MemberByIdDTO, new { MemberId = id });
+
+                return (result != null);
+            }
         }
 
         /// <summary>
@@ -214,13 +221,30 @@ namespace BackendCRUD.Infraestructure.Repository
         /// </summary>
         /// <param name="Id"></param>
         /// <returns></returns>
-        public async Task<bool> DeleteMember(int Id)
+        public async Task<bool> DeleteMember(int id)
         {
-            MemberEF? dataBD = await _dataBaseDBContext.Member.Where(x => x.Id.Equals(Id)).SingleOrDefaultAsync();
+            //using (IDbConnection connection = new SqlConnection(_cadenaConexion))
+            //{
+            //    connection.Open();
+            //    var result = await connection.QuerySingleOrDefaultAsync<MemberDTO>(MemberQueries.MemberByIdDTO, new { MemberId = id });
+
+            //    if (result == null)
+            //        return false;
+            //}
+
+            MemberEF? dataBD = await _dataBaseDBContext.Member.Where(x => x.Id.Equals(id)).SingleOrDefaultAsync();
             if (dataBD == null)
                 return false;
             else
             {
+                List<MemberTagEF>? tagList = await _dataBaseDBContext.MemberTag.Where(x => x.Member_id.Equals(id)).ToListAsync();
+
+                if (tagList.Any())
+                {
+                    foreach (var tag in tagList)
+                        _dataBaseDBContext.MemberTag.Remove(tag);
+                }
+
                 _dataBaseDBContext.Member.Remove(dataBD);
                 bool result = await _dataBaseDBContext.SaveChangesAsync() > 0;
 

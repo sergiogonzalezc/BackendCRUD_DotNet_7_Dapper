@@ -2,7 +2,9 @@ using BackendCRUD.Application.Interface;
 using BackendCRUD.Application.Services;
 using BackendCRUD.Common;
 using BackendCRUD.Infraestructure.Repository;
+using BackendCRUD.Minimal.Api.Endpoints;
 using BackendCRUD.Minimal.Api.Model;
+using Carter;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using NLog;
 using System.Diagnostics;
@@ -71,6 +73,7 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+builder.Services.AddCarter();
 
 builder.Services.AddControllers(options =>
 {
@@ -131,15 +134,13 @@ app.UseRequestLocalization(new RequestLocalizationOptions
 app.UseCors("localhost");
 app.UseAuthentication();
 app.UseAuthorization();
-app.MapControllers();
 app.UseExceptionHandler("/error");
 app.UseRouting();
 app.UseResponseCaching();
-app.UseAuthentication();
-app.UseAuthorization();
 app.UseHttpsRedirection();
 app.MapControllers();
 
+app.MapCarter();
 
 // SGC - Asigna la version del Assembly al Log4Net
 Assembly thisApp = Assembly.GetExecutingAssembly();
@@ -158,7 +159,5 @@ Process currentProcess = Process.GetCurrentProcess();
 GlobalDiagnosticsContext.Set("ProcessID", "PID " + currentProcess.Id.ToString());
 
 ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", "===== INICIO API [BackendCRUD.Api] =====");
-
-
 
 app.Run();

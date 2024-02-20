@@ -1,53 +1,40 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using BackendCRUD.Application.Model;
-using BackendCRUD.Application.Interface;
-using BackendCRUD.Api.Model;
-using Microsoft.AspNetCore.Authorization;
-using BackendCRUD.Common;
-using MediatR;
-using BackendCRUD.Application.Querys;
-using Microsoft.AspNetCore.Cors;
-using BackendCRUD.Application.Commands;
-using AutoMapper;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using Azure;
-using FluentValidation;
-using System.ComponentModel.DataAnnotations;
+﻿using BackendCRUD.Application.Commands;
 using BackendCRUD.Application.Handlers;
+using BackendCRUD.Application.Model;
+using BackendCRUD.Application.Querys;
+using BackendCRUD.Common;
+using BackendCRUD.Minimal.Api.Model;
+using Carter;
+using MediatR;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
-namespace BackendCRUD.Api.Controllers
+namespace BackendCRUD.Minimal.Api.Endpoints
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [EnableCors]
-    public class MemberManagementController : ControllerBase
+    public class MemberManagementEndpoint : ICarterModule
     {
-        private readonly IMemberApplication _membersApplication;
-        private readonly IMediator _mediator;
-        private readonly IMapper _mapper;
-
-        private BackendCRUD.Api.Model.Error err = new BackendCRUD.Api.Model.Error
+        public void AddRoutes(IEndpointRouteBuilder app)
         {
-            Code = StatusCodes.Status400BadRequest
-        };
+            var group = app.MapGroup("api/members");
 
-        public MemberManagementController(IMemberApplication MembersServices, IMediator mediator, IMapper mapper)
-        {
-            _membersApplication = MembersServices;
-            _mediator = mediator;
-            _mapper = mapper;
+            group.MapPost("", InsertMember);
+            group.MapGet("", GetMembers);
+            group.MapGet("{id}", GetMember).WithName(nameof(GetMember));
+            group.MapPut("{id}", UpdateMember).WithName(nameof(UpdateMember));
+            group.MapDelete("{id}", DeleteMember).WithName(nameof(DeleteMember));
         }
+
 
         /// <summary>
         /// Get the member list
         /// </summary>
         /// <returns></returns>
-        [HttpGet]
-        [Route("members")]
-        [ProducesResponseType(typeof(List<BackendCRUD.Application.Model.Member>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [AllowAnonymous]
-        public async Task<MemberModel> GetMembers()
+        //[HttpGet]
+        //[Route("members")]
+        //[ProducesResponseType(typeof(List<BackendCRUD.Application.Model.Member>), StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[AllowAnonymous]
+        public static async Task<Results<Ok<MemberModel>, BadRequest<MemberModel>>> GetMembers(ISender mediator)
         {
             string nameMethod = nameof(GetMembers);
             MemberModel finalResult = new MemberModel();
@@ -56,18 +43,11 @@ namespace BackendCRUD.Api.Controllers
             {
                 // Implement a CQRS for query/command responsibility segregation
                 var query = new GetMembersQuerys();
-                List<MemberDTO> result = await _mediator.Send(query);
+                List<MemberDTO> result = await mediator.Send(query);
 
                 finalResult.Success = true;
                 finalResult.DataList = result;
 
-            }
-            catch (ArgumentException arEx)
-            {
-                ServiceLog.Write(Common.Enum.LogType.WebSite, arEx, nameMethod, "Error!");
-
-                finalResult.Success = false;
-                finalResult.Message = arEx.Message;
             }
             catch (Exception ex)
             {
@@ -75,9 +55,10 @@ namespace BackendCRUD.Api.Controllers
 
                 finalResult.Success = false;
                 finalResult.Message = ex.Message;
+                return TypedResults.BadRequest(finalResult);
             }
 
-            return finalResult;
+            return TypedResults.Ok(finalResult);
 
         }
 
@@ -87,23 +68,23 @@ namespace BackendCRUD.Api.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpGet]
-        //[Route("GetMemberById")]
-        //[Route("members/{memberId}/orders")]
-        [Route("members/{id}")]
-        [ProducesResponseType(typeof(BackendCRUD.Application.Model.Member), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetMember(int id)
+        //[HttpGet]
+        ////[Route("GetMemberById")]
+        ////[Route("members/{memberId}/orders")]
+        //[Route("members/{id}")]
+        //[ProducesResponseType(typeof(BackendCRUD.Application.Model.Member), StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[AllowAnonymous]
+        public static async Task<IResult> GetMember(int id, ISender mediator)
         {
-            string nameMethod = nameof(GetMember);
+            string nameMethod = nameof(GetMembers);
             MemberModel finalResult = new();
 
             try
             {
                 // Implement a CQRS for query/command responsibility segregation
                 var query = new GetMemberByIdQuerys(id);
-                MemberDTO result = await _mediator.Send(query);
+                MemberDTO result = await mediator.Send(query);
                 var validator = new GetMemberByIdHandlerValidator();
 
                 //var resultValidation = validator.Validate(result);
@@ -121,10 +102,10 @@ namespace BackendCRUD.Api.Controllers
 
                 finalResult.Success = false;
                 finalResult.Message = ex.Message;
-                return BadRequest(finalResult);
+                return TypedResults.BadRequest(finalResult);
             }
 
-            return Ok(finalResult);
+            return TypedResults.Ok(finalResult);
         }
 
 
@@ -133,13 +114,13 @@ namespace BackendCRUD.Api.Controllers
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        [HttpPost]
-        [Route("insert")]
-        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(InsertMemberModel), StatusCodes.Status200OK)]
-        [AllowAnonymous]
-        public async Task<IActionResult> InsertMember([FromBody] InputCreateMember input)
+        //[HttpPost]
+        //[Route("insert")]
+        //[ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(typeof(InsertMemberModel), StatusCodes.Status200OK)]
+        //[AllowAnonymous]
+        public static async Task<IResult> InsertMember([FromBody] InputCreateMember input, ISender mediator)
         {
             string nameMethod = nameof(InsertMember);
             InsertMemberModel finalResult = new();
@@ -149,7 +130,7 @@ namespace BackendCRUD.Api.Controllers
                 // Implement a CQRS for query/command responsibility segregation
 
                 var query = new InsertMemberCommand(input);
-                ResultRequestDTO result = await _mediator.Send(query);
+                ResultRequestDTO result = await mediator.Send(query);
 
                 finalResult.Success = true;
                 finalResult.Data = result;
@@ -160,13 +141,11 @@ namespace BackendCRUD.Api.Controllers
 
                 finalResult.Success = false;
                 finalResult.Message = ex.Message;
-                return BadRequest(finalResult);
+                return TypedResults.BadRequest(finalResult);
             }
 
-            return Ok(finalResult);
+            return TypedResults.Ok(finalResult);
         }
-
-
 
 
         /// <summary>
@@ -174,12 +153,12 @@ namespace BackendCRUD.Api.Controllers
         /// </summary>
         /// <param name="input"></param>
         /// <returns></returns>
-        [HttpPut]
-        [Route("update")]
-        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [AllowAnonymous]
-        public async Task<IActionResult> UpdateMember([FromBody] InputUpdateMember input)
+        //[HttpPut]
+        //[Route("update")]
+        //[ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[AllowAnonymous]
+        public static async Task<IResult> UpdateMember([FromBody] InputUpdateMember input, ISender mediator)
         {
             string nameMethod = nameof(UpdateMember);
             UpdateMemberModel finalResult = new();
@@ -187,22 +166,21 @@ namespace BackendCRUD.Api.Controllers
             {
                 // Implement a CQRS for query/command responsibility segregation
                 var query = new UpdateMemberCommand(input);
-                ResultRequestDTO result = await _mediator.Send(query);
+                ResultRequestDTO result = await mediator.Send(query);
 
                 finalResult.Success = true;
                 finalResult.Data = result;
             }
-
             catch (Exception ex)
             {
                 ServiceLog.Write(Common.Enum.LogType.WebSite, ex, nameMethod, "Error!");
 
                 finalResult.Success = false;
                 finalResult.Message = ex.Message;
-                return BadRequest(finalResult);
+                return TypedResults.BadRequest(finalResult);
             }
 
-            return Ok(finalResult);
+            return TypedResults.Ok(finalResult);
         }
 
 
@@ -211,12 +189,12 @@ namespace BackendCRUD.Api.Controllers
         /// </summary>
         /// <param name="Id"></param>
         /// <returns></returns>
-        [HttpDelete]
-        [Route("delete")]
-        [ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [AllowAnonymous]
-        public async Task<IActionResult> DeleteMember([FromBody] int Id)
+        //[HttpDelete]
+        //[Route("delete")]
+        //[ProducesResponseType(typeof(bool), StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[AllowAnonymous]
+        public static async Task<IResult> DeleteMember(int Id, ISender mediator)
         {
             string nameMethod = nameof(DeleteMember);
             DeleteMemberModel finalResult = new();
@@ -224,7 +202,7 @@ namespace BackendCRUD.Api.Controllers
             {
                 // Implement a CQRS for query/command responsibility segregation
                 var query = new DeleteMemberCommand(Id);
-                ResultRequestDTO result = await _mediator.Send(query);
+                ResultRequestDTO result = await mediator.Send(query);
 
                 finalResult.Success = true;
                 finalResult.Data = result;
@@ -233,12 +211,14 @@ namespace BackendCRUD.Api.Controllers
             {
                 ServiceLog.Write(Common.Enum.LogType.WebSite, ex, nameMethod, "Error!");
 
-                err.Message = ex.Message;
-                err.AditionalData = ex.GetBaseException().Message;
-                return BadRequest(err);
+                finalResult.Success = false;
+                finalResult.Message = ex.Message;
+                return TypedResults.BadRequest(finalResult);
             }
 
-            return Ok(finalResult);
+            return TypedResults.Ok(finalResult);
         }
     }
+
 }
+
