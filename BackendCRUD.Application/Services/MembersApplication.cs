@@ -1,20 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Configuration;
-using System.Diagnostics;
-using System.IdentityModel.Tokens.Jwt;
-using System.IO;
-using System.Linq;
-using System.Runtime.Serialization.DataContracts;
-using System.Security.Claims;
-using System.Text;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Nodes;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using BackendCRUD.Application.Common.ErrorsTypes;
 using BackendCRUD.Application.ConfiguracionApi;
 using BackendCRUD.Application.Interface;
 using BackendCRUD.Application.Model;
@@ -464,8 +449,8 @@ namespace BackendCRUD.Application.Services
         public async Task<MemberDTO> GetMembersById(int id)
         {
             if (id < 0)
-                throw new Exception("Error: code not found");
-
+                throw new Exception("Error: invalid code");
+                
             MemberDTO outPut = await _MembersRepository.GetMemberById(id);
 
             if (outPut == null)

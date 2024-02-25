@@ -1,4 +1,5 @@
-﻿using BackendCRUD.Application.Commands;
+﻿using AutoMapper;
+using BackendCRUD.Application.Commands;
 using BackendCRUD.Application.Handlers;
 using BackendCRUD.Application.Model;
 using BackendCRUD.Application.Querys;
@@ -85,8 +86,11 @@ namespace BackendCRUD.Minimal.Api.Endpoints
                 // Implement a CQRS for query/command responsibility segregation
                 var query = new GetMemberByIdQuerys(id);
                 MemberDTO result = await mediator.Send(query);
-                var validator = new GetMemberByIdHandlerValidator();
+                
+                
+                //var response = mapper.Map<AuthenticationResponse>(result);
 
+                //var validator = new GetMemberByIdHandlerValidator();
                 //var resultValidation = validator.Validate(result);
 
                 //if (!resultValidation.IsValid)
