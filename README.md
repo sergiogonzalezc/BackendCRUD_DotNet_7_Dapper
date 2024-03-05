@@ -1,7 +1,7 @@
 # Backend project configuration
 
 ## Database Configuration ##
-You must execute the scripts that are in the **Scripts-BD** folder in the Solution. This files apply to SQL Server 2016 or higher (Express, Standard, Enterprise, etc.), in the order indicated.
+You must execute the scripts that are in the **BackendCRUD.Sql** folder in the Solution. This files apply to SQL Server 2016 or higher (Express, Standard, Enterprise, etc.), in the order indicated.
 - **Note:** Script 1 creates a DB from scratch in the location **C:\MSSQL_BD** which must have been previously created. If you are not running SQL Server locally, you can skip this step and move on to script 2 and script 3.
 - **Script 2**: If you don't have a DB with **BD_Team** name, please create a new DB with that name. Then execute **Script 2** for create only the tables.
 - **Script 3**: Create only example records for members, role types and tags for members. The **Script 2** must be executed previous to execute **Script 3**.
