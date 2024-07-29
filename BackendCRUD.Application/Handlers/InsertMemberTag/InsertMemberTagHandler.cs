@@ -9,20 +9,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BackendCRUD.Application.Handlers
+namespace BackendCRUD.Application.Handlers.InsertMemberTag
 {
-    public class GetMemberTypesHandler : IRequestHandler<GetMemberTypesQuerys, List<MemberType>>
+    public class InsertMemberTagHandler : IRequestHandler<InsertMemberTagCommand, ResultRequestDTO>
     {
         private readonly IMemberApplication _MembersService;
 
-        public GetMemberTypesHandler(IMemberApplication MembersApplication)
+        public InsertMemberTagHandler(IMemberApplication MembersApplication)
         {
             _MembersService = MembersApplication;
         }
 
-        public async Task<List<MemberType>> Handle(GetMemberTypesQuerys request, CancellationToken cancellationToken)
+        public async Task<ResultRequestDTO> Handle(InsertMemberTagCommand request, CancellationToken cancellationToken)
         {
-            return await _MembersService.GetMemberTypes();
+            return await _MembersService.InsertMemberTag(request.input);
         }
     }
 }
+

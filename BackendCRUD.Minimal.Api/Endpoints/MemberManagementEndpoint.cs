@@ -10,6 +10,7 @@ using MediatR;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
+using FluentValidation;
 
 namespace BackendCRUD.Minimal.Api.Endpoints
 {
@@ -17,12 +18,36 @@ namespace BackendCRUD.Minimal.Api.Endpoints
     {
         public void AddRoutes(IEndpointRouteBuilder app)
         {
-            var group = app.MapGroup("api/members");
+            var group = app.MapGroup("api/members").WithOpenApi();
 
-            group.MapPost("", InsertMember);
-            group.MapGet("", GetMembers);
-            group.MapGet("{id}", GetMember).WithName(nameof(GetMember));
-            group.MapPut("{id}", UpdateMember).WithName(nameof(UpdateMember));
+            group.MapPost("", InsertMember)
+                        .Produces<InsertMemberModel>(StatusCodes.Status201Created)
+                        .ProducesProblem(StatusCodes.Status400BadRequest)
+                        .WithSummary("Inserta un nuevo miembro")
+                        .WithDescription("Demo");
+
+            group.MapGet("", GetMembers)
+                        //.Produces<Results<Ok<MemberModel>, BadRequest<MemberModel>>>(StatusCodes.Status200OK)
+                        //.ProducesProblem(StatusCodes.Status400BadRequest)
+                        .ProducesProblem(StatusCodes.Status404NotFound)
+                        .WithSummary("Obtiene lista de miembros")
+                        .WithDescription("Obtiene lista de miembros");
+
+            group.MapGet("{id}", GetMember).WithName(nameof(GetMember))
+                        .Produces<MemberModel>(StatusCodes.Status200OK)
+                        .ProducesProblem(StatusCodes.Status400BadRequest)
+                        .ProducesProblem(StatusCodes.Status404NotFound)
+                        .WithSummary("Obtiene lista de miembros por ID")
+                        .WithDescription("Obtiene lista de miembros por ID");
+
+
+            group.MapPut("{id}", UpdateMember).WithName(nameof(UpdateMember))
+                        .Produces<UpdateMemberModel>(StatusCodes.Status200OK)
+                        .ProducesProblem(StatusCodes.Status400BadRequest)
+                        .ProducesProblem(StatusCodes.Status404NotFound)
+                        .WithSummary("Obtiene lista de miembros por ID")
+                        .WithDescription("Obtiene lista de miembros por ID");
+
             group.MapDelete("{id}", DeleteMember).WithName(nameof(DeleteMember));
         }
 

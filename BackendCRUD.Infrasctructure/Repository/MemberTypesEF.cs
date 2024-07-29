@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace BackendCRUD.Infraestructure.Repository
 {
-    [Table("MemberTypes", Schema = "dbo")]
+    [Table("MemberType", Schema = "dbo")]
     public class MemberTypesEF
     {
         [Key]

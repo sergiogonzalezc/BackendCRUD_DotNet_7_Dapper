@@ -9,20 +9,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BackendCRUD.Application.Handlers
+namespace BackendCRUD.Application.Handlers.InsertRoleType
 {
-    public class InsertMemberTagHandler : IRequestHandler<InsertMemberTagCommand, ResultRequestDTO>
+    public class InsertRoleTypeHandler : IRequestHandler<InsertRoleTypeCommand, ResultRequestDTO>
     {
         private readonly IMemberApplication _MembersService;
 
-        public InsertMemberTagHandler(IMemberApplication MembersApplication)
+        public InsertRoleTypeHandler(IMemberApplication MembersApplication)
         {
             _MembersService = MembersApplication;
         }
 
-        public async Task<ResultRequestDTO> Handle(InsertMemberTagCommand request, CancellationToken cancellationToken)
+        public async Task<ResultRequestDTO> Handle(InsertRoleTypeCommand request, CancellationToken cancellationToken)
         {
-            return await _MembersService.InsertMemberTag(request.input);
+            return await _MembersService.InsertRoleType(request.input);
         }
     }
 }

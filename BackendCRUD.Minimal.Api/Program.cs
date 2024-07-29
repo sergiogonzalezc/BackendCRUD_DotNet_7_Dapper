@@ -1,3 +1,5 @@
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using BackendCRUD.Application.Interface;
 using BackendCRUD.Application.Services;
 using BackendCRUD.Common;
@@ -12,8 +14,14 @@ using NLog;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using FluentValidation;
+using System.Configuration;
+using static Org.BouncyCastle.Math.EC.ECCurve;
+using BackendCRUD.Application.Behaviors;
+using BackendCRUD.Application.Exceptions.Handler;
 
 var builder = WebApplication.CreateBuilder(args);
+
 
 // Add services to the container.
 
@@ -59,20 +67,30 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-builder.Services.AddCarter();
-
 builder.Services.AddControllers(options =>
 {
     options.Filters.Add<ErrorHandlingFilterAttribute>();
 });
 
-//builder.Services.AddMediatR(typeof(Program).Assembly);
-//builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(Assembly.GetExecutingAssembly()));
 foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
 {
-    builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(assembly));
+    builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblies(assembly)
+                                        .AddOpenBehavior(typeof(ValidationBehavior<,>))
+                                        .AddOpenBehavior(typeof(LoggingBehavior<,>))
+    );
+
+    builder.Services.AddValidatorsFromAssembly(assembly);
 }
+//builder.Services.AddMediatR(config =>
+//{
+//    config.RegisterServicesFromAssembly(typeof(Program).Assembly);
+//    //config.AddOpenBehavior(typeof(ValidationBehavior<,>));
+//    //config.AddOpenBehavior(typeof(LoggingBehavior<,>));
+//});
+
+
+
+builder.Services.AddCarter();
 
 builder.Services.AddHsts(options =>
 {
@@ -82,48 +100,11 @@ builder.Services.AddHsts(options =>
 
 builder.Services.AddOptions();
 
+//Cross-Cutting Services
+builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 
-
-// var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
-//var servidorbd = Environment.GetEnvironmentVariable("MSSQL_SA_SERVER") ?? @"THEKONES-PC\\SQLEXPRESS";
-//var puerto = Environment.GetEnvironmentVariable("MSSQL_SA_PORT") ?? @"1433";
-//var basedatos = Environment.GetEnvironmentVariable("DB_HOST");
-//var user = Environment.GetEnvironmentVariable("DB_NAME");
-//var contrasenna = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
-
-//var CONN = $"Server={servidorbd},{puerto};Initial Catalog={basedatos};User ID={user};Password={contrasenna}";
-
-//ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", $"VARIABLES DE ENTORNO {CONN}");
-
-//builder.Services.AddDbContext<DBContextBackendCRUD>(
-//                    options =>
-//                    {
-//                        var connectionString = builder.Configuration.GetConnectionString("stringConnection");
-//                        ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", $"===> CONN [{connectionString}]...");
-
-//                        if (!builder.Environment.IsDevelopment())
-//                        {
-//                            ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", $"===> PRODUCCION MODE!");
-
-//                            // var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
-//                            var servidorbd = Environment.GetEnvironmentVariable("MSSQL_SA_SERVER") ?? @"THEKONES-PC\\SQLEXPRESS";
-//                            var puerto = Environment.GetEnvironmentVariable("MSSQL_SA_PORT") ?? @"1433";
-//                            var basedatos = Environment.GetEnvironmentVariable("DB_HOST");
-//                            var user = Environment.GetEnvironmentVariable("DB_NAME");
-//                            var contrasenna = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
-
-//                            connectionString = $"Server={servidorbd},{puerto};Initial Catalog={basedatos};User ID={user};Password={contrasenna};TrustServerCertificate=true";
-
-//                        }
-//                        else
-//                            ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", $"===> DEBUG MODE!");
-
-
-//                        ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", $"===> CONEXION [{connectionString}]...");
-
-//                        options.UseSqlServer(connectionString);                      
-
-//                    });
+builder.Services.AddHealthChecks();
+//    .AddNpgSql(builder.Configuration.GetConnectionString("Database")!);
 
 var app = builder.Build();
 
@@ -165,6 +146,7 @@ app.UseRequestLocalization(new RequestLocalizationOptions
                 }
 });
 
+//app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseCors("localhost");
 app.UseAuthentication();
@@ -188,8 +170,8 @@ GlobalDiagnosticsContext.Set("ProcessID", "PID " + currentProcess.Id.ToString())
 
 
 //app.UseExceptionHandler("/error");
-app.UseExceptionHandler(exceptionHandlerApp
-    => exceptionHandlerApp.Run(async context => await Results.Problem().ExecuteAsync(context)));
+//app.UseExceptionHandler(exceptionHandlerApp
+//    => exceptionHandlerApp.Run(async context => await Results.Problem().ExecuteAsync(context)));
 
 app.Map("/error", () =>
                 {
@@ -208,36 +190,15 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
+
 app.MapCarter();
+app.UseExceptionHandler(options => { });
 
-//builder.Services.AddDbContext<DockerComposeDemoDbContext>(
-//                       options =>
-//                       {
-//                           var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-//                           if (!builder.Environment.IsDevelopment())
-//                           {
-//                               // var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
-//var servidorbd = Environment.GetEnvironmentVariable("MSSQL_SA_SERVER") ?? @"THEKONES-PC\\SQLEXPRESS";
-//var puerto = Environment.GetEnvironmentVariable("MSSQL_SA_PORT") ?? @"1433";
-//var basedatos = Environment.GetEnvironmentVariable("DB_HOST");
-//var user = Environment.GetEnvironmentVariable("DB_NAME");
-//var contraseña = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
-
-//connectionString = $"Server={servidorbd},{puerto};Initial Catalog={basedatos};User ID={user};Password={contraseña};TrustServerCertificate=true";
-
-
-//                           }
-//                           options.UseSqlServer(connectionString);
-
-//                       });
-
-//using (var scope = app.Services.CreateScope())
-//{
-//    var db = scope.ServiceProvider.GetRequiredService<DockerComposeDemoDbContext>();
-//    db.Database.Migrate();
-//}
-
-
+app.UseHealthChecks("/health",
+    new HealthCheckOptions
+    {
+        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+    });
 
 ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", "===== INICIO API [BackendCRUD.Minimal.Api] =====");
 

@@ -8,23 +8,23 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BackendCRUD.Application.Handlers
+namespace BackendCRUD.Application.Handlers.GetRole
 {
     /// <summary>
-    /// Implement a CQRS handler 
+    /// Implement a CQRS handler for RoleType
     /// </summary>
-    public class GetMemberHandler : IRequestHandler<GetMembersQuerys, List<MemberDTO>>
+    public class GetRoleTypeHandler : IRequestHandler<GetRoleTypeQuerys, List<RoleType>>
     {
         private readonly IMemberApplication _MembersService;
 
-        public GetMemberHandler(IMemberApplication MembersApplication)
+        public GetRoleTypeHandler(IMemberApplication MembersApplication)
         {
             _MembersService = MembersApplication;
         }
 
-        public async Task<List<MemberDTO>> Handle(GetMembersQuerys request, CancellationToken cancellationToken)
+        public async Task<List<RoleType>> Handle(GetRoleTypeQuerys request, CancellationToken cancellationToken)
         {
-            return await _MembersService.GetMembers();
+            return await _MembersService.GetRoleTypes();
         }
 
     }

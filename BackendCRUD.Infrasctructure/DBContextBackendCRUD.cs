@@ -7,11 +7,18 @@ using BackendCRUD.Application.Model;
 using System.Configuration;
 using Microsoft.Extensions.Options;
 using BackendCRUD.Common;
+using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.Hosting;
+using Autofac.Core;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.Hosting;
 
 namespace BackendCRUD.Infraestructure
 {
     public class DBContextBackendCRUD : DbContext
     {
+        private IWebHostEnvironment _currentEnvironment { get; }
+
         private string _connString { get; set; }
 
         public DbSet<MemberEF> Member { get; set; }
@@ -30,10 +37,11 @@ namespace BackendCRUD.Infraestructure
         {
             _connString = cadenaConexion;
         }
-        public DBContextBackendCRUD(DbContextOptions<DBContextBackendCRUD> dbContextOptions) : base(dbContextOptions)
+        public DBContextBackendCRUD(DbContextOptions<DBContextBackendCRUD> dbContextOptions, IWebHostEnvironment env) : base(dbContextOptions)
         {
             try
             {
+                _currentEnvironment = env;
                 _connString = Database.GetDbConnection().ConnectionString ?? String.Empty;
 
                 //// var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
@@ -44,7 +52,7 @@ namespace BackendCRUD.Infraestructure
                 //var contrasenna = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
 
                 //_connString = $"Server={servidorbd},1433;Initial Catalog={basedatos};User ID={user};Password={contrasenna};TrustServerCertificate=true";
-                                
+
                 //var databaseCreator = Database.GetService<IDatabaseCreator>() as RelationalDatabaseCreator;
 
                 //ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "OnConfiguring", $"Se setea BD [{_connString}]");
@@ -84,14 +92,28 @@ namespace BackendCRUD.Infraestructure
             {
                 if (!optionsBuilder.IsConfigured)
                 {
-                    // var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
-                    var servidorbd = Environment.GetEnvironmentVariable("DB_SERVER_HOST") ?? @"THEKONES-PC\\SQLEXPRESS";
-                    var puerto = Environment.GetEnvironmentVariable("DB_SERVER_PORT") ?? @"1433";
-                    var basedatos = Environment.GetEnvironmentVariable("DB_NAME");
-                    var user = Environment.GetEnvironmentVariable("DB_USER");
-                    var contrasenna = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
+                    //var configuration = new ConfigurationBuilder()
+                    //                .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
+                    //                .AddJsonFile("appsettings.json")
+                    //                .AddEnvironmentVariables(prefix: "YOUR_APP_PREFIX_")
+                    //                .Build();
 
-                    _connString = $"Server={servidorbd},{puerto};Initial Catalog={basedatos};User ID={user};Password={contrasenna};TrustServerCertificate=true";
+                    //string envName = _currentEnvironment.EnvironmentName;
+
+                    // Si es desarrollo, se usa la BD local. En cambio, si es producción, se usa la BD de DOCKER
+                    if (!_currentEnvironment.IsDevelopment())
+                    {
+                        // var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
+                        var servidorbd = Environment.GetEnvironmentVariable("DB_SERVER_HOST") ?? @"THEKONES-PC\\SQLEXPRESS";
+                        var puerto = Environment.GetEnvironmentVariable("DB_SERVER_PORT") ?? @"1433";
+                        var basedatos = Environment.GetEnvironmentVariable("DB_NAME");
+                        var user = Environment.GetEnvironmentVariable("DB_USER");
+                        var contrasenna = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
+
+                        _connString = $"Server={servidorbd},{puerto};Initial Catalog={basedatos};User ID={user};Password={contrasenna};TrustServerCertificate=true";
+                    }
+                    else
+                        _connString = Database.GetDbConnection().ConnectionString ?? String.Empty;
 
                     optionsBuilder.UseSqlServer(_connString);
 

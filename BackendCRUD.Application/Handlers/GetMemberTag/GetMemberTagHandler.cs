@@ -9,21 +9,20 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BackendCRUD.Application.Handlers
+namespace BackendCRUD.Application.Handlers.GetMemberTag
 {
-    public class DeleteMemberHandler : IRequestHandler<DeleteMemberCommand, ResultRequestDTO>
+    public class GetMemberTagHandler : IRequestHandler<GetMemberTagQuerys, List<MemberTagDTO>>
     {
         private readonly IMemberApplication _MembersService;
 
-        public DeleteMemberHandler(IMemberApplication MembersApplication)
+        public GetMemberTagHandler(IMemberApplication MembersApplication)
         {
             _MembersService = MembersApplication;
         }
 
-        public async Task<ResultRequestDTO> Handle(DeleteMemberCommand request, CancellationToken cancellationToken)
+        public async Task<List<MemberTagDTO>> Handle(GetMemberTagQuerys request, CancellationToken cancellationToken)
         {
-            return await _MembersService.DeleteMember(request.Id);
+            return await _MembersService.GetMemberTags();
         }
     }
 }
-

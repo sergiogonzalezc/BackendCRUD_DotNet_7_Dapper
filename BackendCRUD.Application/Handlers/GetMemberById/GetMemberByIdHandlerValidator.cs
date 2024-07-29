@@ -9,7 +9,7 @@ using System.Text;
 using System.Threading.Tasks;
 using FluentValidation;
 
-namespace BackendCRUD.Application.Handlers
+namespace BackendCRUD.Application.Handlers.GetMemberById
 {
 
     /// <summary>

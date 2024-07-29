@@ -40,7 +40,7 @@ namespace BackendCRUD.Api
             builder.Services.AddSwaggerGen();
 
             //builder.Services.AddAutoMapper(typeof(Program).Assembly);
-            builder.Services.AddAutoMapper(Assembly.GetEntryAssembly());
+            //builder.Services.AddAutoMapper(Assembly.GetEntryAssembly());
 
             builder.Services.AddControllers(options =>
             {
@@ -62,7 +62,7 @@ namespace BackendCRUD.Api
 
 
             //builder.Services.AddAutoMapper(typeof(Program).Assembly);
-            builder.Services.AddAutoMapper(Assembly.GetEntryAssembly());
+            //builder.Services.AddAutoMapper(Assembly.GetEntryAssembly());
 
             builder.Services.AddHsts(options =>
             {

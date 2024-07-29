@@ -20,6 +20,8 @@ using Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using BackendCRUD.Common;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Hosting;
 
 namespace BackendCRUD.Infraestructure.Repository
 {
@@ -30,9 +32,11 @@ namespace BackendCRUD.Infraestructure.Repository
         private DBContextBackendCRUD _dataBaseDBContext;
         private Mapper _mapper;
         private readonly IConnectionFactory _connectionFactory;
+        private IWebHostEnvironment _currentEnvironment { get; }
 
-        public MemberEFRepository(IConfiguration configuracion)
+        public MemberEFRepository(IConfiguration configuracion, IWebHostEnvironment env)
         {
+            _currentEnvironment = env;
             _configuracion = configuracion;
             _connString = _configuracion.GetConnectionString("stringConnection");
 
@@ -41,22 +45,25 @@ namespace BackendCRUD.Infraestructure.Repository
             var opcionesDBContext = new DbContextOptionsBuilder<DBContextBackendCRUD>();
             //opcionesDBContext.UseMySQL(_cadenaConexion);
 
-            //if (!Environment.IsDevelopment())
-            var servidorbd = Environment.GetEnvironmentVariable("DB_SERVER_HOST") ?? @"THEKONES-PC\\SQLEXPRESS";
-            var puerto = Environment.GetEnvironmentVariable("DB_SERVER_PORT") ?? @"1433";
-            var basedatos = Environment.GetEnvironmentVariable("DB_NAME");
-            var user = Environment.GetEnvironmentVariable("DB_USER");
-            var contrasenna = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
+            // Si es desarrollo, se usa la BD local. En cambio, si es producción, se usa la BD de DOCKER
+            if (!_currentEnvironment.IsDevelopment())
+            {
+                var servidorbd = Environment.GetEnvironmentVariable("DB_SERVER_HOST") ?? @"THEKONES-PC\\SQLEXPRESS";
+                var puerto = Environment.GetEnvironmentVariable("DB_SERVER_PORT") ?? @"1433";
+                var basedatos = Environment.GetEnvironmentVariable("DB_NAME");
+                var user = Environment.GetEnvironmentVariable("DB_USER");
+                var contrasenna = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
 
-            //_connString = $"Server={servidorbd},{puerto};Initial Catalog={basedatos};User ID={user};Password={contrasenna};TrustServerCertificate=true;";
-            _connString = $"Data Source={servidorbd};Initial Catalog={basedatos};User ID={user};Password={contrasenna};TrustServerCertificate=true;Encrypt=False";
+                //_connString = $"Server={servidorbd},{puerto};Initial Catalog={basedatos};User ID={user};Password={contrasenna};TrustServerCertificate=true;";
+                _connString = $"Data Source={servidorbd};Initial Catalog={basedatos};User ID={user};Password={contrasenna};TrustServerCertificate=true;Encrypt=False";
+            }
 
             opcionesDBContext.UseSqlServer(_connString);
 
             ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "MemberEFRepository", $"NEW CONEXION A BD [{_connString}...");
 
 
-            _dataBaseDBContext = new DBContextBackendCRUD(opcionesDBContext.Options);
+            _dataBaseDBContext = new DBContextBackendCRUD(opcionesDBContext.Options, _currentEnvironment);
 
             MapperConfiguration config = new MapperConfiguration(cfg =>
             {

@@ -20,6 +20,7 @@ using BackendCRUD.Infraestructure;
 using BackendCRUD.Infraestructure.Repository;
 using AutoMapper;
 using MediatR;
+using Microsoft.AspNetCore.Hosting;
 
 namespace BackendCRUD.Api.UnitTest.Controller.IntegracionTest
 {
@@ -28,6 +29,7 @@ namespace BackendCRUD.Api.UnitTest.Controller.IntegracionTest
         private readonly IMemberApplication _membersApplication;
         private readonly IMediator _mediator;
         private readonly IMapper _mapper;
+        private IWebHostEnvironment CurrentEnvironment { get; }
 
         public MemberManagementControllerTest()
         {
@@ -40,8 +42,8 @@ namespace BackendCRUD.Api.UnitTest.Controller.IntegracionTest
             var newOptions = new DbContextOptionsBuilder<DBContextBackendCRUD>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-
-            var dataBaseContext = new DBContextBackendCRUD(newOptions);
+            
+            var dataBaseContext = new DBContextBackendCRUD(newOptions, CurrentEnvironment);
             dataBaseContext.Database.EnsureCreated();
             // populate de database in memory
             if (await dataBaseContext.Member.CountAsync() <= 0)

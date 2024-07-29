@@ -8,23 +8,23 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BackendCRUD.Application.Handlers
+namespace BackendCRUD.Application.Handlers.GetTag
 {
     /// <summary>
-    /// Implement a CQRS handler for RoleType
+    /// Implement a CQRS handler for Tag
     /// </summary>
-    public class GetRoleTypeHandler : IRequestHandler<GetRoleTypeQuerys, List<RoleType>>
+    public class GetTagHandler : IRequestHandler<GetTagQuerys, List<Tag>>
     {
         private readonly IMemberApplication _MembersService;
 
-        public GetRoleTypeHandler(IMemberApplication MembersApplication)
+        public GetTagHandler(IMemberApplication MembersApplication)
         {
             _MembersService = MembersApplication;
         }
 
-        public async Task<List<RoleType>> Handle(GetRoleTypeQuerys request, CancellationToken cancellationToken)
+        public async Task<List<Tag>> Handle(GetTagQuerys request, CancellationToken cancellationToken)
         {
-            return await _MembersService.GetRoleTypes();
+            return await _MembersService.GetTags();
         }
 
     }

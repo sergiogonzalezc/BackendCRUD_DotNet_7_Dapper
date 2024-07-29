@@ -104,7 +104,7 @@ namespace BackendCRUD.Api.Controllers
                 // Implement a CQRS for query/command responsibility segregation
                 var query = new GetMemberByIdQuerys(id);
                 MemberDTO result = await _mediator.Send(query);
-                var validator = new GetMemberByIdHandlerValidator();
+                //var validator = new GetMemberByIdHandlerValidator();
 
                 //var resultValidation = validator.Validate(result);
 

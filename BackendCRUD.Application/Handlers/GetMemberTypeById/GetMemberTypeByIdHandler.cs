@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace BackendCRUD.Application.Handlers
+namespace BackendCRUD.Application.Handlers.GetMemberTypeById
 {
     public class GetMemberTypeByIdHandler : IRequestHandler<GetMemberTypeByIdQuerys, MemberType>
     {
