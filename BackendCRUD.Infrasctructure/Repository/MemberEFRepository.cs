@@ -17,12 +17,15 @@ using Dapper;
 using Microsoft.Data.SqlClient;
 using BackendCRUD.Sql.Queries;
 using Microsoft.EntityFrameworkCore.SqlServer.Storage.Internal;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using BackendCRUD.Common;
 
 namespace BackendCRUD.Infraestructure.Repository
 {
     public class MemberEFRepository : IMemberRepository
     {
-        private readonly string _cadenaConexion;
+        private readonly string _connString;
         private readonly IConfiguration _configuracion;
         private DBContextBackendCRUD _dataBaseDBContext;
         private Mapper _mapper;
@@ -31,11 +34,27 @@ namespace BackendCRUD.Infraestructure.Repository
         public MemberEFRepository(IConfiguration configuracion)
         {
             _configuracion = configuracion;
-            _cadenaConexion = _configuracion.GetConnectionString("stringConnection");
+            _connString = _configuracion.GetConnectionString("stringConnection");
+
+            ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "MemberEFRepository", $"CONEXION A BD por defecto [{_connString}...");
 
             var opcionesDBContext = new DbContextOptionsBuilder<DBContextBackendCRUD>();
             //opcionesDBContext.UseMySQL(_cadenaConexion);
-            opcionesDBContext.UseSqlServer(_cadenaConexion);
+
+            //if (!Environment.IsDevelopment())
+            var servidorbd = Environment.GetEnvironmentVariable("DB_SERVER_HOST") ?? @"THEKONES-PC\\SQLEXPRESS";
+            var puerto = Environment.GetEnvironmentVariable("DB_SERVER_PORT") ?? @"1433";
+            var basedatos = Environment.GetEnvironmentVariable("DB_NAME");
+            var user = Environment.GetEnvironmentVariable("DB_USER");
+            var contrasenna = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
+
+            //_connString = $"Server={servidorbd},{puerto};Initial Catalog={basedatos};User ID={user};Password={contrasenna};TrustServerCertificate=true;";
+            _connString = $"Data Source={servidorbd};Initial Catalog={basedatos};User ID={user};Password={contrasenna};TrustServerCertificate=true;Encrypt=False";
+
+            opcionesDBContext.UseSqlServer(_connString);
+
+            ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "MemberEFRepository", $"NEW CONEXION A BD [{_connString}...");
+
 
             _dataBaseDBContext = new DBContextBackendCRUD(opcionesDBContext.Options);
 
@@ -73,6 +92,8 @@ namespace BackendCRUD.Infraestructure.Repository
             }
             catch (Exception ex)
             {
+                ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, ex, "Error", $"===> CONector [{_dataBaseDBContext.Database.GetConnectionString}]...");
+
                 throw;
             }
         }
@@ -100,6 +121,8 @@ namespace BackendCRUD.Infraestructure.Repository
             }
             catch (Exception ex)
             {
+                ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, ex, "Error", $"===> CONector [{_dataBaseDBContext.Database.GetConnectionString}]...");
+
                 throw;
             }
         }
@@ -110,28 +133,37 @@ namespace BackendCRUD.Infraestructure.Repository
         /// <returns></returns>
         public async Task<List<MemberDTO>> GetMembers()
         {
-            List<MemberDTO> outPutList = new List<MemberDTO>();
-
-            using (IDbConnection connection = new SqlConnection(_cadenaConexion))
+            try
             {
-                connection.Open();
-                var result = await connection.QueryAsync<MemberDTO>(MemberQueries.AllMemberDTO);
+                List<MemberDTO> outPutList = new List<MemberDTO>();
 
-                //       var result = await connection.QueryAsync<MemberDTO, List<TagDTO>, MemberDTO>(MemberQueries.AllMemberDTO, (member, tag) =>
-                //       {
-                //           member.tag_list = tag;
-                //           return member;
-                //       },
-                //splitOn: "");
-
-
-                foreach (var itemMember in result)
+                using (IDbConnection connection = new SqlConnection(_connString))
                 {
-                    var tagListDTO = await connection.QueryAsync<TagDTO>(TagQueries.AllTagByMember, new { MemberId = itemMember.Id });
-                    itemMember.tag_list = tagListDTO.ToList();
-                }
+                    connection.Open();
+                    var result = await connection.QueryAsync<MemberDTO>(MemberQueries.AllMemberDTO);
 
-                return result.ToList();
+                    //       var result = await connection.QueryAsync<MemberDTO, List<TagDTO>, MemberDTO>(MemberQueries.AllMemberDTO, (member, tag) =>
+                    //       {
+                    //           member.tag_list = tag;
+                    //           return member;
+                    //       },
+                    //splitOn: "");
+
+
+                    foreach (var itemMember in result)
+                    {
+                        var tagListDTO = await connection.QueryAsync<TagDTO>(TagQueries.AllTagByMember, new { MemberId = itemMember.Id });
+                        itemMember.tag_list = tagListDTO.ToList();
+                    }
+
+                    return result.ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, ex, nameof(GetMembers), $"===> Error [{_connString}]...");
+
+                throw;
             }
         }
 
@@ -141,45 +173,55 @@ namespace BackendCRUD.Infraestructure.Repository
         /// <returns></returns>
         public async Task<List<MemberDTO>> GetMembersOld()
         {
-            List<MemberEF>? dataBD = await _dataBaseDBContext.Member.ToListAsync();
-            List<MemberDTO> outPutList = new List<MemberDTO>();
-
-            // map the output tho model type
-            List<Member> result = _mapper.Map<List<Member>>(dataBD);
-
-            foreach (var Member in result)
+            try
             {
-                MemberDTO item = new MemberDTO();
-                item.Id = Member.Id;
-                item.name = Member.name;
-                item.salary_per_year = Member.salary_per_year;
-                item.type = Member.type;
-                item.type_description = _dataBaseDBContext.MemberType.Where(x => x.Id.Equals(Member.type)).Select(x => x.Description).SingleOrDefault();
+                List<MemberEF>? dataBD = await _dataBaseDBContext.Member.ToListAsync();
+                List<MemberDTO> outPutList = new List<MemberDTO>();
 
-                item.role = Member.role;
-                item.role_description = _dataBaseDBContext.RoleType.Where(x => x.id.Equals(Member.role)).Select(x => x.description).SingleOrDefault();
+                // map the output tho model type
+                List<Member> result = _mapper.Map<List<Member>>(dataBD);
 
-                item.country = Member.country;
-                item.currencie_name = Member.currencie_name;
+                foreach (var Member in result)
+                {
+                    MemberDTO item = new MemberDTO();
+                    item.Id = Member.Id;
+                    item.name = Member.name;
+                    item.salary_per_year = Member.salary_per_year;
+                    item.type = Member.type;
+                    item.type_description = _dataBaseDBContext.MemberType.Where(x => x.Id.Equals(Member.type)).Select(x => x.Description).SingleOrDefault();
 
-                // search for tags that belong to the member
-                var tagListDTO = (from mt in _dataBaseDBContext.MemberTag
-                                  join t in _dataBaseDBContext.Tag on mt.Tag_id equals t.Id
-                                  where
-                                  mt.Member_id.Equals(Member.Id)
-                                  select new TagDTO
-                                  {
-                                      Id = mt.Tag_id,
-                                      Label = t.Label
-                                  }).ToList();
+                    item.role = Member.role;
+                    item.role_description = _dataBaseDBContext.RoleType.Where(x => x.Id.Equals(Member.role)).Select(x => x.Description).SingleOrDefault();
 
-                item.tag_list = tagListDTO;
+                    item.country = Member.country;
+                    item.currencie_name = Member.currencie_name;
 
-                outPutList.Add(item);
+                    // search for tags that belong to the member
+                    var tagListDTO = (from mt in _dataBaseDBContext.MemberTag
+                                      join t in _dataBaseDBContext.Tag on mt.Tag_id equals t.Id
+                                      where
+                                      mt.Member_id.Equals(Member.Id)
+                                      select new TagDTO
+                                      {
+                                          Id = mt.Tag_id,
+                                          Label = t.Label
+                                      }).ToList();
+
+                    item.tag_list = tagListDTO;
+
+                    outPutList.Add(item);
+                }
+
+                return outPutList;
             }
+            catch (Exception ex)
+            {
+                ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, ex, "Error", $"===> CONector [{_dataBaseDBContext.Database.GetConnectionString}]...");
 
-            return outPutList;
+                throw;
+            }
         }
+
 
         /// <summary>
         /// Validate if exists te same Member for the employee. Return TRUE if exists.
@@ -203,16 +245,25 @@ namespace BackendCRUD.Infraestructure.Repository
         /// <returns></returns>
         public async Task<bool> ExistsMemberById(int id)
         {
-            //MemberEF? dataBD = await _dataBaseDBContext.Member.Where(x => x.Id.Equals(Id)).SingleOrDefaultAsync();
-
-            //List<MemberDTO> outPutList = new List<MemberDTO>();
-
-            using (IDbConnection connection = new SqlConnection(_cadenaConexion))
+            try
             {
-                connection.Open();
-                var result = await connection.QuerySingleOrDefaultAsync<MemberDTO>(MemberQueries.MemberByIdDTO, new { MemberId = id });
+                //MemberEF? dataBD = await _dataBaseDBContext.Member.Where(x => x.Id.Equals(Id)).SingleOrDefaultAsync();
 
-                return (result != null);
+                //List<MemberDTO> outPutList = new List<MemberDTO>();
+
+                using (IDbConnection connection = new SqlConnection(_connString))
+                {
+                    connection.Open();
+                    var result = await connection.QuerySingleOrDefaultAsync<MemberDTO>(MemberQueries.MemberByIdDTO, new { MemberId = id });
+
+                    return (result != null);
+                }
+            }
+            catch (Exception ex)
+            {
+                ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, ex, "Error", $"===> CONector [{_dataBaseDBContext.Database.GetConnectionString}]...");
+
+                throw;
             }
         }
 
@@ -259,32 +310,42 @@ namespace BackendCRUD.Infraestructure.Repository
         /// <returns></returns>
         public async Task<MemberDTO> GetMembersByName(string name)
         {
-            // Take the last record 
-            MemberEF? dataBD = await _dataBaseDBContext.Member.Where(x => x.name.ToUpper().Equals(name.ToUpper())
-                                                                                    ).OrderByDescending(x => x.Id).Take(1).SingleOrDefaultAsync();
+            try
+            {
+                // Take the last record 
+                MemberEF? dataBD = await _dataBaseDBContext.Member.Where(x => x.name.ToUpper().Equals(name.ToUpper())
+                                                                                        ).OrderByDescending(x => x.Id).Take(1).SingleOrDefaultAsync();
 
-            if (dataBD == null)
-                return null;
+                if (dataBD == null)
+                    return null;
 
-            // map the output tho model type
-            Member result = _mapper.Map<Member>(dataBD);
+                // map the output tho model type
+                Member result = _mapper.Map<Member>(dataBD);
 
-            MemberDTO item = new MemberDTO();
-            item.Id = result.Id;
-            item.name = result.name;
-            item.salary_per_year = result.salary_per_year;
-            item.type = result.type;
-            item.type_description = _dataBaseDBContext.MemberType.Where(x => x.Id.Equals(result.type)).Select(x => x.Description).SingleOrDefault();
+                MemberDTO item = new MemberDTO();
+                item.Id = result.Id;
+                item.name = result.name;
+                item.salary_per_year = result.salary_per_year;
+                item.type = result.type;
+                item.type_description = _dataBaseDBContext.MemberType.Where(x => x.Id.Equals(result.type)).Select(x => x.Description).SingleOrDefault();
 
-            item.role = result.role;
-            item.role_description = _dataBaseDBContext.MemberType.Where(x => x.Id.Equals(result.type)).Select(x => x.Description).SingleOrDefault();
+                item.role = result.role;
+                item.role_description = _dataBaseDBContext.MemberType.Where(x => x.Id.Equals(result.type)).Select(x => x.Description).SingleOrDefault();
 
-            item.country = result.country;
-            item.currencie_name = result.currencie_name;
+                item.country = result.country;
+                item.currencie_name = result.currencie_name;
 
-            //item.tag_list = Member.currencie_name;
-            return item;
+                //item.tag_list = Member.currencie_name;
+                return item;
+            }
+            catch (Exception ex)
+            {
+                ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, ex, "Error", $"===> CONector [{_dataBaseDBContext.Database.GetConnectionString}]...");
+
+                throw;
+            }
         }
+
 
         /// <summary>
         /// Get the Member type List filter by Id
@@ -325,20 +386,29 @@ namespace BackendCRUD.Infraestructure.Repository
         /// <returns></returns>
         public async Task<MemberDTO> GetMemberById(int id)
         {
-            List<MemberDTO> outPutList = new List<MemberDTO>();
-
-            using (IDbConnection connection = new SqlConnection(_cadenaConexion))
+            try
             {
-                connection.Open();
-                var result = await connection.QuerySingleOrDefaultAsync<MemberDTO>(MemberQueries.MemberByIdDTO, new { MemberId = id });
+                List<MemberDTO> outPutList = new List<MemberDTO>();
 
-                if (result != null)
+                using (IDbConnection connection = new SqlConnection(_connString))
                 {
-                    var tagListDTO = await connection.QueryAsync<TagDTO>(TagQueries.AllTagByMember, new { MemberId = id });
-                    result.tag_list = tagListDTO.ToList();
-                }
+                    connection.Open();
+                    var result = await connection.QuerySingleOrDefaultAsync<MemberDTO>(MemberQueries.MemberByIdDTO, new { MemberId = id });
 
-                return result;
+                    if (result != null)
+                    {
+                        var tagListDTO = await connection.QueryAsync<TagDTO>(TagQueries.AllTagByMember, new { MemberId = id });
+                        result.tag_list = tagListDTO.ToList();
+                    }
+
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, ex, "Error", $"===> CONector [{_dataBaseDBContext.Database.GetConnectionString}]...");
+
+                throw;
             }
         }
 
@@ -354,15 +424,24 @@ namespace BackendCRUD.Infraestructure.Repository
         /// <returns></returns>
         public async Task<List<Application.Model.MemberType>> GetMemberTypes()
         {
-            List<MemberTypesEF>? dataBD = await _dataBaseDBContext.MemberType.ToListAsync();
+            try
+            {
+                List<MemberTypesEF>? dataBD = await _dataBaseDBContext.MemberType.ToListAsync();
 
-            if (dataBD == null)
-                return null;
+                if (dataBD == null)
+                    return null;
 
-            // map the output tho model type
-            List<Application.Model.MemberType> resultModel = _mapper.Map<List<Application.Model.MemberType>>(dataBD);
+                // map the output tho model type
+                List<Application.Model.MemberType> resultModel = _mapper.Map<List<Application.Model.MemberType>>(dataBD);
 
-            return resultModel;
+                return resultModel;
+            }
+            catch (Exception ex)
+            {
+                ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, ex, "Error", $"===> CONector [{_dataBaseDBContext.Database.GetConnectionString}]...");
+
+                throw;
+            }
         }
 
 
@@ -372,15 +451,24 @@ namespace BackendCRUD.Infraestructure.Repository
         /// <returns></returns>
         public async Task<Application.Model.MemberType> GetMemberTypeById(string id)
         {
-            MemberTypesEF? dataBD = await _dataBaseDBContext.MemberType.Where(x => x.Id == id).SingleOrDefaultAsync();
+            try
+            {
+                MemberTypesEF? dataBD = await _dataBaseDBContext.MemberType.Where(x => x.Id == id).SingleOrDefaultAsync();
 
-            if (dataBD == null)
-                return null;
+                if (dataBD == null)
+                    return null;
 
-            // map the output tho model type
-            Application.Model.MemberType result = _mapper.Map<Application.Model.MemberType>(dataBD);
+                // map the output tho model type
+                Application.Model.MemberType result = _mapper.Map<Application.Model.MemberType>(dataBD);
 
-            return result;
+                return result;
+            }
+            catch (Exception ex)
+            {
+                ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, ex, "Error", $"===> CONector [{_dataBaseDBContext.Database.GetConnectionString}]...");
+
+                throw;
+            }
         }
 
         #endregion
@@ -434,7 +522,7 @@ namespace BackendCRUD.Infraestructure.Repository
         /// <returns></returns>
         public async Task<RoleType> GetRoleTypeById(int id)
         {
-            RoleTypeEF? dataBD = await _dataBaseDBContext.RoleType.Where(x => x.id == id).SingleOrDefaultAsync();
+            RoleTypeEF? dataBD = await _dataBaseDBContext.RoleType.Where(x => x.Id == id).SingleOrDefaultAsync();
 
             if (dataBD == null)
                 return null;

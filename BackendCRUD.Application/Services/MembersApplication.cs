@@ -58,6 +58,13 @@ namespace BackendCRUD.Application.Services
 
                 if (dataMember == null)
                     throw new Exception("Error: try again");
+                //Member dataMember = new Member();
+                //dataMember.name = input.name;
+                //dataMember.salary_per_year = input.salary_per_year;
+                //dataMember.type = input.type;
+                //dataMember.role = input.role;
+                //dataMember.country = input.country;
+                //dataMember.currencie_name = "CL";
 
                 result = await _MembersRepository.InsertMember(dataMember);
 

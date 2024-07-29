@@ -9,6 +9,7 @@ using Carter;
 using MediatR;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace BackendCRUD.Minimal.Api.Endpoints
 {
@@ -86,8 +87,8 @@ namespace BackendCRUD.Minimal.Api.Endpoints
                 // Implement a CQRS for query/command responsibility segregation
                 var query = new GetMemberByIdQuerys(id);
                 MemberDTO result = await mediator.Send(query);
-                
-                
+
+
                 //var response = mapper.Map<AuthenticationResponse>(result);
 
                 //var validator = new GetMemberByIdHandlerValidator();

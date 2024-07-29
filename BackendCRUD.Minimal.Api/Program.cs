@@ -1,11 +1,13 @@
 using BackendCRUD.Application.Interface;
 using BackendCRUD.Application.Services;
 using BackendCRUD.Common;
+using BackendCRUD.Infraestructure;
 using BackendCRUD.Infraestructure.Repository;
 using BackendCRUD.Minimal.Api.Endpoints;
 using BackendCRUD.Minimal.Api.Model;
 using Carter;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 using NLog;
 using System.Diagnostics;
 using System.Globalization;
@@ -14,32 +16,6 @@ using System.Reflection;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-
-builder.Services.AddSwaggerGen();
-
-
-//var summaries = new[]
-//{
-//    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-//};
-
-//app.MapGet("/weatherforecast", () =>
-//{
-//    var forecast = Enumerable.Range(1, 5).Select(index =>
-//        new WeatherForecast
-//        (
-//            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-//            Random.Shared.Next(-20, 55),
-//            summaries[Random.Shared.Next(summaries.Length)]
-//        ))
-//        .ToArray();
-//    return forecast;
-//})
-//.WithName("GetWeatherForecast")
-//.WithOpenApi();
-
-
 
 string envName = builder.Environment.EnvironmentName;
 
@@ -61,13 +37,24 @@ builder.Services.AddCors(options =>
         builder.WithOrigins("http://localhost:3000",
                             "http://localhost:3001",
                             "http://localhost:3002",
-                            "http://localhost:3003")
+                            "http://localhost:3003",
+                            "http://localhost:12000",
+                            "http://localhost:8080",
+                            "http://localhost:8081",
+                            "http://localhost:8082",
+                            "http://localhost:5000",
+                            "http://localhost:25471",
+                            "http://localhost:57344",
+                            "http://localhost:57343",
+                            "http://localhost:80"
+                            )
                             .AllowAnyMethod()
                             .AllowAnyHeader()
-                            .AllowCredentials()
-                            .WithExposedHeaders("content-disposition");
+                            .AllowCredentials();
+        //.WithExposedHeaders("content-disposition");
     });
 });
+
 
 
 builder.Services.AddEndpointsApiExplorer();
@@ -96,7 +83,57 @@ builder.Services.AddHsts(options =>
 builder.Services.AddOptions();
 
 
+
+// var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
+//var servidorbd = Environment.GetEnvironmentVariable("MSSQL_SA_SERVER") ?? @"THEKONES-PC\\SQLEXPRESS";
+//var puerto = Environment.GetEnvironmentVariable("MSSQL_SA_PORT") ?? @"1433";
+//var basedatos = Environment.GetEnvironmentVariable("DB_HOST");
+//var user = Environment.GetEnvironmentVariable("DB_NAME");
+//var contrasenna = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
+
+//var CONN = $"Server={servidorbd},{puerto};Initial Catalog={basedatos};User ID={user};Password={contrasenna}";
+
+//ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", $"VARIABLES DE ENTORNO {CONN}");
+
+//builder.Services.AddDbContext<DBContextBackendCRUD>(
+//                    options =>
+//                    {
+//                        var connectionString = builder.Configuration.GetConnectionString("stringConnection");
+//                        ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", $"===> CONN [{connectionString}]...");
+
+//                        if (!builder.Environment.IsDevelopment())
+//                        {
+//                            ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", $"===> PRODUCCION MODE!");
+
+//                            // var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
+//                            var servidorbd = Environment.GetEnvironmentVariable("MSSQL_SA_SERVER") ?? @"THEKONES-PC\\SQLEXPRESS";
+//                            var puerto = Environment.GetEnvironmentVariable("MSSQL_SA_PORT") ?? @"1433";
+//                            var basedatos = Environment.GetEnvironmentVariable("DB_HOST");
+//                            var user = Environment.GetEnvironmentVariable("DB_NAME");
+//                            var contrasenna = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
+
+//                            connectionString = $"Server={servidorbd},{puerto};Initial Catalog={basedatos};User ID={user};Password={contrasenna};TrustServerCertificate=true";
+
+//                        }
+//                        else
+//                            ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", $"===> DEBUG MODE!");
+
+
+//                        ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", $"===> CONEXION [{connectionString}]...");
+
+//                        options.UseSqlServer(connectionString);                      
+
+//                    });
+
 var app = builder.Build();
+
+
+// Ensure database is created during application startup
+//using (var scope = app.Services.CreateScope())
+//{
+//    var dbContext = scope.ServiceProvider.GetRequiredService<DBContextBackendCRUD>();
+//    await dbContext.Database.EnsureCreatedAsync();
+//}
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -108,12 +145,9 @@ else
 {
     //Solo habilitado en producción
     app.UseSwagger();
-    app.UseSwaggerUI(c =>
-    {
-        c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-    });
+    app.UseSwaggerUI();
 
-    app.UseHsts();
+    //app.UseHsts();
 }
 
 // define culture spanish CL
@@ -131,16 +165,10 @@ app.UseRequestLocalization(new RequestLocalizationOptions
                 }
 });
 
+
 app.UseCors("localhost");
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseExceptionHandler("/error");
-app.UseRouting();
-app.UseResponseCaching();
-app.UseHttpsRedirection();
-app.MapControllers();
-
-app.MapCarter();
 
 // SGC - Asigna la version del Assembly al Log4Net
 Assembly thisApp = Assembly.GetExecutingAssembly();
@@ -158,6 +186,59 @@ Process currentProcess = Process.GetCurrentProcess();
 
 GlobalDiagnosticsContext.Set("ProcessID", "PID " + currentProcess.Id.ToString());
 
-ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", "===== INICIO API [BackendCRUD.Api] =====");
+
+//app.UseExceptionHandler("/error");
+app.UseExceptionHandler(exceptionHandlerApp
+    => exceptionHandlerApp.Run(async context => await Results.Problem().ExecuteAsync(context)));
+
+app.Map("/error", () =>
+                {
+                    ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Error, "INICIO_API", "An Error Occurred...!!");
+
+                    throw new InvalidOperationException("An Error Occurred...");
+                });
+
+app.UseRouting();
+app.UseResponseCaching();
+app.UseHttpsRedirection();
+app.MapControllers();
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
+app.MapCarter();
+
+//builder.Services.AddDbContext<DockerComposeDemoDbContext>(
+//                       options =>
+//                       {
+//                           var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+//                           if (!builder.Environment.IsDevelopment())
+//                           {
+//                               // var password = Environment.GetEnvironmentVariable("MSSQL_SA_PASSWORD");
+//var servidorbd = Environment.GetEnvironmentVariable("MSSQL_SA_SERVER") ?? @"THEKONES-PC\\SQLEXPRESS";
+//var puerto = Environment.GetEnvironmentVariable("MSSQL_SA_PORT") ?? @"1433";
+//var basedatos = Environment.GetEnvironmentVariable("DB_HOST");
+//var user = Environment.GetEnvironmentVariable("DB_NAME");
+//var contraseña = Environment.GetEnvironmentVariable("DB_SA_PASSWORD");
+
+//connectionString = $"Server={servidorbd},{puerto};Initial Catalog={basedatos};User ID={user};Password={contraseña};TrustServerCertificate=true";
+
+
+//                           }
+//                           options.UseSqlServer(connectionString);
+
+//                       });
+
+//using (var scope = app.Services.CreateScope())
+//{
+//    var db = scope.ServiceProvider.GetRequiredService<DockerComposeDemoDbContext>();
+//    db.Database.Migrate();
+//}
+
+
+
+ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, System.Diagnostics.TraceLevel.Info, "INICIO_API", "===== INICIO API [BackendCRUD.Minimal.Api] =====");
 
 app.Run();
