@@ -31,7 +31,8 @@ namespace BackendCRUD.Sql.Queries
 											FROM [Member] (NOLOCK) m
 											inner join [MemberType] t (NOLOCK) on t.id = m.type
 											left join [RoleType] r (NOLOCK) on r.id = m.role
-											order by m.id asc";
+											order by m.id asc 
+											OFFSET @PageSize * (@PageNumber-1) ROWS FETCH NEXT @PageSize ROWS ONLY";
 
         public static string MemberByIdDTO => @"SELECT 
 												 m.[ID], 

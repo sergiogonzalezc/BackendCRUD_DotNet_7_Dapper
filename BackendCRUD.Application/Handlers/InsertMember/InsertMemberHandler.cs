@@ -22,11 +22,11 @@ namespace BackendCRUD.Application.Handlers.InsertMember
     {
         public InsertMemberHandlerValidationValidator()
         {
-            RuleFor(x => x.input.name).NotEmpty().WithMessage("Valor name requerido!!!");
-            RuleFor(x => x.input.name.Trim()).MaximumLength(50).WithMessage("Valor es muy grande");
+            RuleFor(x => x.input.name).NotEmpty().WithMessage("Valor name requerido!!!"); //lanza error si es nulo o vacio el valor
+            RuleFor(x => x.input.name.Trim()).MaximumLength(50).WithMessage("Valor es muy grande");  //lanza error si el valor es mayor
             RuleFor(x => x.input.type).NotEmpty().WithMessage("Valor type requerido!!!");
-            RuleFor(x => x.input.salary_per_year).LessThanOrEqualTo(0).WithMessage("Valor debe ser mayor a 0!!!");
-            RuleFor(x => x.input.salary_per_year).GreaterThan(10).WithMessage("Valor debe ser menor a 0!!!");
+            RuleFor(x => x.input.salary_per_year).LessThan(10).WithMessage("Valor debe ser menor a 10!!!"); // lanza error si el valor es mayor o igual al valor especificado
+            RuleFor(x => x.input.salary_per_year).GreaterThan(0).WithMessage("Valor debe ser mayor que 0!!!"); // lanza error si el valor es menor o igual al valor especificado
         }
     }
 

@@ -22,6 +22,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using BackendCRUD.Common;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using BackendCRUD.Application.Common;
 
 namespace BackendCRUD.Infraestructure.Repository
 {
@@ -134,45 +135,7 @@ namespace BackendCRUD.Infraestructure.Repository
             }
         }
 
-        /// <summary>
-        /// Get the list of member using Dapper
-        /// </summary>
-        /// <returns></returns>
-        public async Task<List<MemberDTO>> GetMembers()
-        {
-            try
-            {
-                List<MemberDTO> outPutList = new List<MemberDTO>();
 
-                using (IDbConnection connection = new SqlConnection(_connString))
-                {
-                    connection.Open();
-                    var result = await connection.QueryAsync<MemberDTO>(MemberQueries.AllMemberDTO);
-
-                    //       var result = await connection.QueryAsync<MemberDTO, List<TagDTO>, MemberDTO>(MemberQueries.AllMemberDTO, (member, tag) =>
-                    //       {
-                    //           member.tag_list = tag;
-                    //           return member;
-                    //       },
-                    //splitOn: "");
-
-
-                    foreach (var itemMember in result)
-                    {
-                        var tagListDTO = await connection.QueryAsync<TagDTO>(TagQueries.AllTagByMember, new { MemberId = itemMember.Id });
-                        itemMember.tag_list = tagListDTO.ToList();
-                    }
-
-                    return result.ToList();
-                }
-            }
-            catch (Exception ex)
-            {
-                ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, ex, nameof(GetMembers), $"===> Error [{_connString}]...");
-
-                throw;
-            }
-        }
 
         /// <summary>
         /// Asynchronous reading of member list is executed
@@ -269,6 +232,44 @@ namespace BackendCRUD.Infraestructure.Repository
             catch (Exception ex)
             {
                 ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, ex, "Error", $"===> CONector [{_dataBaseDBContext.Database.GetConnectionString}]...");
+
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Get the list of member using Dapper
+        /// </summary>
+        /// <returns></returns>
+        public async Task<List<MemberDTO>> GetMembers(int pageNumber, int pageSize)
+        {
+            try
+            {
+                using (IDbConnection connection = new SqlConnection(_connString))
+                {
+                    connection.Open();
+                    var result = await connection.QueryAsync<MemberDTO>(MemberQueries.AllMemberDTO, new { @PageSize = pageSize, PageNumber = pageNumber });
+
+                    //       var result = await connection.QueryAsync<MemberDTO, List<TagDTO>, MemberDTO>(MemberQueries.AllMemberDTO, (member, tag) =>
+                    //       {
+                    //           member.tag_list = tag;
+                    //           return member;
+                    //       },
+                    //splitOn: "");
+
+
+                    foreach (var itemMember in result)
+                    {
+                        var tagListDTO = await connection.QueryAsync<TagDTO>(TagQueries.AllTagByMember, new { MemberId = itemMember.Id });
+                        itemMember.tag_list = tagListDTO.ToList();
+                    }
+
+                    return result.ToList();
+                }
+            }
+            catch (Exception ex)
+            {
+                ServiceLog.Write(BackendCRUD.Common.Enum.LogType.WebSite, ex, nameof(GetMembers), $"===> Error [{_connString}]...");
 
                 throw;
             }

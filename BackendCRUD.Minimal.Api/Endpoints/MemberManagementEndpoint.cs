@@ -11,9 +11,13 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Net;
 using FluentValidation;
+using BackendCRUD.Application.Common;
+using BackendCRUD.Application.Handlers.GetMember;
 
 namespace BackendCRUD.Minimal.Api.Endpoints
 {
+    //public record GetMembersWithPaginationQuery(int? PageNumber = 1, int? PageSize = 10);
+
     public class MemberManagementEndpoint : ICarterModule
     {
         public void AddRoutes(IEndpointRouteBuilder app)
@@ -61,32 +65,10 @@ namespace BackendCRUD.Minimal.Api.Endpoints
         //[ProducesResponseType(typeof(List<BackendCRUD.Application.Model.Member>), StatusCodes.Status200OK)]
         //[ProducesResponseType(StatusCodes.Status400BadRequest)]
         //[AllowAnonymous]
-        public static async Task<Results<Ok<MemberModel>, BadRequest<MemberModel>>> GetMembers(ISender mediator)
+        public static async Task<List<MemberDTO>> GetMembers(ISender mediator, [AsParameters] GetMembersWithPaginationQuery request)
         {
-            string nameMethod = nameof(GetMembers);
-            MemberModel finalResult = new MemberModel();
-
-            try
-            {
-                // Implement a CQRS for query/command responsibility segregation
-                var query = new GetMembersQuerys();
-                List<MemberDTO> result = await mediator.Send(query);
-
-                finalResult.Success = true;
-                finalResult.DataList = result;
-
-            }
-            catch (Exception ex)
-            {
-                ServiceLog.Write(Common.Enum.LogType.WebSite, ex, nameMethod, "Error!");
-
-                finalResult.Success = false;
-                finalResult.Message = ex.Message;
-                return TypedResults.BadRequest(finalResult);
-            }
-
-            return TypedResults.Ok(finalResult);
-
+            // Implement a CQRS for query/command responsibility segregation
+            return await mediator.Send(request);
         }
 
 

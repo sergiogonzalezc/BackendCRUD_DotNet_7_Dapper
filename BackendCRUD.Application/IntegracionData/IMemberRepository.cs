@@ -1,4 +1,5 @@
-﻿using BackendCRUD.Application.Model;
+﻿using BackendCRUD.Application.Common;
+using BackendCRUD.Application.Model;
 
 namespace BackendCRUD.Application.Interface
 {
@@ -23,7 +24,7 @@ namespace BackendCRUD.Application.Interface
         /// 
         /// </summary>
         /// <returns></returns>
-        public Task<List<MemberDTO>> GetMembers();
+        public Task<List<MemberDTO>> GetMembers(int pageNumber, int pageSize);
 
         /// <summary>
         /// Validate if exists te same Member for the employee

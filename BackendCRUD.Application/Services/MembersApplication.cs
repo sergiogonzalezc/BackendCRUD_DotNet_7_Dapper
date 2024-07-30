@@ -1,5 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Nodes;
+using BackendCRUD.Application.Common;
 using BackendCRUD.Application.ConfiguracionApi;
 using BackendCRUD.Application.Interface;
 using BackendCRUD.Application.Model;
@@ -150,6 +151,19 @@ namespace BackendCRUD.Application.Services
             }
         }
 
+        /// <summary>
+        /// Get the full list of members
+        /// </summary>
+        /// <returns></returns>
+        public async Task<List<MemberDTO>> GetMembers(int pageNumber, int pageSize)
+        {
+
+            List<MemberDTO> resultado = await _MembersRepository.GetMembers(pageNumber, pageSize);
+            //if (resultado.Count == 0)
+            //    throw new Exception("No existen datos.");
+
+            return resultado;
+        }
 
         /// <summary>
         /// Delete a member by Id
@@ -399,21 +413,7 @@ namespace BackendCRUD.Application.Services
             return dataMember;
         }
 
-        /// <summary>
-        /// Get the full list of members
-        /// </summary>
-        /// <returns></returns>
-        public async Task<List<MemberDTO>> GetMembers()
-        {
-
-            List<MemberDTO> resultado = new List<MemberDTO>();
-            resultado = await _MembersRepository.GetMembers();
-            //if (resultado.Count == 0)
-            //    throw new Exception("No existen datos.");
-
-            return resultado;
-        }
-
+        
         /// <summary>
         /// Validate if exists te same Member for the employee. Return TRUE if exists.
         /// </summary>
